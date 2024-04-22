@@ -1,0 +1,62 @@
+service: domain-automation
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  deploymentMethod: direct
+  timeout: 900
+  iamRoleStatements: 
+    - Effect: "Allow"        
+      Action:
+        - acm:DescribeCertificate      
+        - acm:RequestCertificate       
+        - sns:Publish
+        - elasticloadbalancing:AddListenerCertificates       
+        - elasticloadbalancing:CreateLoadBalancer      
+        - elasticloadbalancing:CreateListener       
+        - elasticloadbalancing:CreateTargetGroup       
+        - elasticloadbalancing:DescribeListeners       
+        - elasticloadbalancing:DescribeTags       
+        - elasticloadbalancing:DescribeLoadBalancers
+        - elasticloadbalancing:RemoveTags       
+        - elasticloadbalancing:AddTags       
+        - elasticloadbalancing:DescribeListenerCertificates       
+        - autoscaling:AttachLoadBalancerTargetGroups     
+        - route53:ChangeResourceRecordSets
+      Resource: 
+        - "*"
+  environment:
+
+    MAX_NUMBER_OF_CERTIFICATES: 12
+    DEFAULT_DOMAIN: x.com.br
+    HOSTED_ZONE_ID: x
+    DEFAULT_CERTIFICATE: arn:aws:acm:us-east-1:x:certificate/d5e7928b-4b24-45ca-9837-37744740a49f
+    LOAD_BALANCER_NAME: x-alb
+    TARGET_GROUP_NAME: x-tg
+    ASG_NAME: x-autoscaling
+    VPC_ID: vpc-x
+    SUBNETS: subnet-x,subnet-y,subnet-z
+    SG_ID: sg-x
+    TOPIC_ARN: arn:aws:sns:us-east-1:x:x-poc
+    DELAY: 10000
+    AWS_ACCOUNT_ID: 123
+
+functions:
+  register-domain:
+    handler: src/functions/register-domain.handler
+
+  get-certificate-status:
+      handler: src/functions/get-certificate-status.handler
+
+  attach-certificate:
+      handler: src/functions/attach-certificate.handler
+      events:
+        - eventBridge:
+            schedule: rate(2 minutes)
+
+  check-alb:
+      handler: src/functions/check-alb.handler
+      events:
+        - eventBridge:
+            schedule: rate(5 minutes)
